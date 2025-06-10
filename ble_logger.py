@@ -2,6 +2,7 @@ import asyncio
 import csv
 from datetime import datetime
 from bleak import BleakClient, BleakScanner
+import struct  # required for decoding floats
 
 DEVICE_NAME = "IMU_LeftHand"
 
@@ -17,14 +18,20 @@ CHARACTERISTICS = {
     "magZ": "00000009-0000-1000-8000-00805f9b34fb"
 }
 
-READ_INTERVAL = 0.5  # seconds
-CSV_FILENAME = "ble_sensor_log.csv"
+READ_INTERVAL = 0.5  # seconds, should be changed to a higher value later
 
-async def read_loop(client):
+DEVICES = {
+    "IMU_LeftHand": "left_hand.csv",
+    "IMU_RightHand": "right_hand.csv",
+    "IMU_LeftLeg": "left_leg.csv",
+    "IMU_RightLeg": "right_leg.csv"
+}
+
+async def read_loop(client, csv_filename, device_name):
     fieldnames = ["timestamp", "accX", "accY", "accZ", "gyroX", "gyroY", "gyroZ", "magX", "magY", "magZ"]
     
     # makes new csv file, overwrites it with new data every time
-    with open(CSV_FILENAME, mode='w', newline='') as csvfile: 
+    with open(csv_filename, mode='w', newline='') as csvfile: 
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
         writer.writeheader() # writes first row as fieldnames
 
@@ -32,33 +39,40 @@ async def read_loop(client):
             row = {"timestamp": datetime.now().isoformat()}
             for name, uuid in CHARACTERISTICS.items():
                 try:
-                    value = await client.read_gatt_char(uuid) # value from the corresponding uuid
-                    int_val = int.from_bytes(value, byteorder='little', signed=True)
-                    row[name] = int_val # store the value into dictionary
-                except Exception as e:
+                    value = await client.read_gatt_char(uuid)  # raw bytes from BLE
+                    float_val = struct.unpack('<f', value)[0]  # convert to float
+                    row[name] = round(float_val, 3) 
+                except Exception:
                     row[name] = None
 
-            print(row)
+            print(f"[{device_name}] {row}")
             writer.writerow(row)
             csvfile.flush()  # ensures data is written to disk every loop
             await asyncio.sleep(READ_INTERVAL)
 
-async def main():
-    print("Scanning for BLE devices...")
+async def connect_to_device(device_name, csv_filename):
+    print(f"Scanning for {device_name}...")
     devices = await BleakScanner.discover()
 
     # finds first device woth matching name
-    nano = next((d for d in devices if d.name and DEVICE_NAME == d.name), None) 
+    nano = next((d for d in devices if d.name and d.name == device_name), None)
 
     if not nano:
-        print("Device not found.")
+        print(f"{device_name} not found.")
         return
 
     async with BleakClient(nano.address) as client:
         if not client.is_connected:
-            print("Failed to connect.")
+            print(f"Failed to connect to {device_name}.")
             return
-        print(f"Connected to {DEVICE_NAME}")
-        await read_loop(client)
+        print(f"Connected to {device_name}")
+        await read_loop(client, csv_filename, device_name)
+
+
+async def main():
+    tasks = []
+    for device_name, csv_filename in DEVICES.items():
+        tasks.append(connect_to_device(device_name, csv_filename))
+    await asyncio.gather(*tasks) # runs all tasks in parallel
 
 asyncio.run(main())
