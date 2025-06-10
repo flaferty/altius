@@ -1,67 +1,61 @@
 import asyncio
-import pandas as pd
-from bleak import BleakScanner, BleakClient
+import csv
 from datetime import datetime
+from bleak import BleakClient, BleakScanner
 
-# BLE Characteristic UUIDs (must match Arduino sketch)
-CHAR_UUIDS = {
-    "accX": "2a57",
-    "accY": "2a58",
-    "accZ": "2a59",
-    "gyroX": "2a5a",
-    "gyroY": "2a5b",
-    "gyroZ": "2a5c",
-    "magX": "2a5d",
-    "magY": "2a5e",
-    "magZ": "2a5f"
+DEVICE_NAME = "IMU_LeftHand"
+
+CHARACTERISTICS = {
+    "accX": "00000001-0000-1000-8000-00805f9b34fb",
+    "accY": "00000002-0000-1000-8000-00805f9b34fb",
+    "accZ": "00000003-0000-1000-8000-00805f9b34fb",
+    "gyroX": "00000004-0000-1000-8000-00805f9b34fb",
+    "gyroY": "00000005-0000-1000-8000-00805f9b34fb",
+    "gyroZ": "00000006-0000-1000-8000-00805f9b34fb",
+    "magX": "00000007-0000-1000-8000-00805f9b34fb",
+    "magY": "00000008-0000-1000-8000-00805f9b34fb",
+    "magZ": "00000009-0000-1000-8000-00805f9b34fb"
 }
 
-imu_data = {
-    "timestamp": [],
-    "accX": [], "accY": [], "accZ": [],
-    "gyroX": [], "gyroY": [], "gyroZ": [],
-    "magX": [], "magY": [], "magZ": []
-}
+READ_INTERVAL = 0.5  # seconds
+CSV_FILENAME = "ble_sensor_log.csv"
 
-# BLE notification handler
-def notification_handler(axis):
-    def handler(_, data):
-        value = int.from_bytes(data, byteorder='little', signed=True) / 1000.0
-        imu_data[axis].append(value)
+async def read_loop(client):
+    fieldnames = ["timestamp"] + list(CHARACTERISTICS.keys())
+    
+    with open(CSV_FILENAME, mode='w', newline='') as csvfile:
+        writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+        writer.writeheader()
 
-        if axis == "magZ":
-            imu_data["timestamp"].append(datetime.now().isoformat())
-            print(f"{imu_data['timestamp'][-1]} | "
-                  f"A=({imu_data['accX'][-1]:.2f}, {imu_data['accY'][-1]:.2f}, {imu_data['accZ'][-1]:.2f}) | "
-                  f"G=({imu_data['gyroX'][-1]:.2f}, {imu_data['gyroY'][-1]:.2f}, {imu_data['gyroZ'][-1]:.2f}) | "
-                  f"M=({imu_data['magX'][-1]:.2f}, {imu_data['magY'][-1]:.2f}, {imu_data['magZ'][-1]:.2f})")
-    return handler
+        while True:
+            row = {"timestamp": datetime.utcnow().isoformat()}
+            for name, uuid in CHARACTERISTICS.items():
+                try:
+                    value = await client.read_gatt_char(uuid)
+                    int_val = int.from_bytes(value, byteorder='little', signed=True)
+                    row[name] = int_val
+                except Exception as e:
+                    row[name] = None
+
+            print(row)
+            writer.writerow(row)
+            csvfile.flush()  # ensures data is written to disk every loop
+            await asyncio.sleep(READ_INTERVAL)
 
 async def main():
-    print("Scanning for NanoBLE-IMU.")
-    device = await BleakScanner.find_device_by_name("NanoBLE-IMU", timeout=10.0)
+    print("Scanning for BLE devices...")
+    devices = await BleakScanner.discover()
+    nano = next((d for d in devices if DEVICE_NAME in d.name), None)
 
-    if not device:
+    if not nano:
         print("Device not found.")
         return
 
-    async with BleakClient(device) as client:
-        print(f"Connected to {device.address}")
+    async with BleakClient(nano.address) as client:
+        if not client.is_connected:
+            print("Failed to connect.")
+            return
+        print(f"Connected to {DEVICE_NAME}")
+        await read_loop(client)
 
-        for axis, uuid in CHAR_UUIDS.items():
-            await client.start_notify(uuid, notification_handler(axis))
-
-        print("Receiving 9-axis IMU data. Press Ctrl+C to stop.")
-
-        try:
-            await asyncio.sleep(60)
-        except KeyboardInterrupt:
-            print("Logging stopped by user.")
-
-        df = pd.DataFrame(imu_data)
-        filename = f"imu_9axis_log_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
-        df.to_csv(filename, index=False)
-        print(f"Data saved to {filename}")
-
-if __name__ == "__main__":
-    asyncio.run(main())
+asyncio.run(main())
