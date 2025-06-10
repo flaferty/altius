@@ -21,19 +21,20 @@ READ_INTERVAL = 0.5  # seconds
 CSV_FILENAME = "ble_sensor_log.csv"
 
 async def read_loop(client):
-    fieldnames = ["timestamp"] + list(CHARACTERISTICS.keys())
+    fieldnames = ["timestamp", "accX", "accY", "accZ", "gyroX", "gyroY", "gyroZ", "magX", "magY", "magZ"]
     
-    with open(CSV_FILENAME, mode='w', newline='') as csvfile:
+    # makes new csv file, overwrites it with new data every time
+    with open(CSV_FILENAME, mode='w', newline='') as csvfile: 
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
-        writer.writeheader()
+        writer.writeheader() # writes first row as fieldnames
 
         while True:
-            row = {"timestamp": datetime.utcnow().isoformat()}
+            row = {"timestamp": datetime.now().isoformat()}
             for name, uuid in CHARACTERISTICS.items():
                 try:
-                    value = await client.read_gatt_char(uuid)
+                    value = await client.read_gatt_char(uuid) # value from the corresponding uuid
                     int_val = int.from_bytes(value, byteorder='little', signed=True)
-                    row[name] = int_val
+                    row[name] = int_val # store the value into dictionary
                 except Exception as e:
                     row[name] = None
 
@@ -45,7 +46,9 @@ async def read_loop(client):
 async def main():
     print("Scanning for BLE devices...")
     devices = await BleakScanner.discover()
-    nano = next((d for d in devices if DEVICE_NAME in d.name), None)
+
+    # finds first device woth matching name
+    nano = next((d for d in devices if d.name and DEVICE_NAME == d.name), None) 
 
     if not nano:
         print("Device not found.")
