@@ -71,12 +71,8 @@ async def connect_to_device(device_name, csv_filename):
 
 async def main():
     tasks = []
-    # Create filename like 'left_hand_20250613_141530.csv', for each different start.
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")  # e.g., 20250613_141530
-    for device_name in DEVICES:
-        base_filename = DEVICES[device_name].replace(".csv", "")
-        unique_filename = f"{base_filename}_{timestamp}.csv"
-        tasks.append(connect_to_device(device_name, unique_filename))
+    for device_name, csv_filename in DEVICES.items():
+        tasks.append(connect_to_device(device_name, csv_filename))
     await asyncio.gather(*tasks) # runs all tasks in parallel
 
 asyncio.run(main())
