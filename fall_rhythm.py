@@ -20,7 +20,7 @@ def read_csv_file(filename):
             except:
                 continue
     return data
-
+# fall detection start
 def compute_magnitude(ax,ay,az):
     return np.sqrt(ax**2 + ay**2 + az**2)
 
@@ -62,7 +62,43 @@ def detect_falls(all_data, partial_threshold = 10.0, sync_window = 0.5):
         "full_falls": full_falls
     }
 
-def analyze_fall_from_csv(folder):
+# rhythm-flow analysis start
+def detect_movement_times(data, movement_threshold = 5.0, min_pause = 0.5):
+    movement_times = []
+    last_time = None
+
+    for ts, ax, ay, az in data:
+        mag = compute_magnitude(ax, ay, az)
+        if mag > movement_threshold:
+            t = datetime.fromisoformat(ts).timestamp()
+            if last_time is None or (t - last_time) > min_pause:
+                movement_times.append(t)
+                last_time = t
+    return movement_times
+
+def analyze_rhythm(movement_times):
+    if len(movement_times) < 2:
+        return None
+    intervals = np.diff(movement_times)
+    mean_interval = np.mean(intervals)
+    std_interval = np.std(intervals)
+    rhythm_score = std_interval / mean_interval if mean_interval else float('inf')
+    return {
+        "mean_interval" : round(mean_interval, 3),
+        "std_interval" : round(std_interval, 3),
+        "rhythm_score" : round(rhythm_score, 3)
+    }
+
+def analyze_climber_flow(all_data, movement_threshold = 5.0, min_pause = 0.5):
+    all_movement_times = []
+    for readings in all_data.values():
+        movement_times = detect_movement_times(readings, movement_threshold, min_pause)
+        all_movement_times.extend(movement_times)
+    all_movement_times.sort()
+    return analyze_rhythm(all_movement_times)
+
+# main function
+def analyze_from_csv(folder):
     all_data = {}
     for part in PARTS:
         file_match = [f for f in os.listdir(folder) if f.startswith(part)]
@@ -72,6 +108,7 @@ def analyze_fall_from_csv(folder):
         data = read_csv_file(os.path.join(folder, file_match[0]))
         all_data[part] = data
 
+    #result of fall detection
     results = detect_falls(all_data)
     print("\n Partial falls detected:")
     for ts, part in results['partial_falls']:
@@ -81,7 +118,17 @@ def analyze_fall_from_csv(folder):
     for ts in results['full_falls']:
         print(f" {ts}")
 
+    #result of rhythm analyse
+    rhythm = analyze_climber_flow(all_data)
+    if rhythm:
+        print("\n Rhythm/Flow Analysis:")
+        print(f" Mean Interval Between Moves: {rhythm['mean_interval']} s")
+        print(f" Std Deviation of Intervals: {rhythm['std_interval']} s")
+        print(f" Rhythm Score (low = better): {rhythm['rhythm_score']}")
+    else:
+        print("\n Not enough data to compute rhythm.")
+
     return results
 
-analyze_fall_from_csv("data")
+analyze_from_csv("data")
 
