@@ -7,7 +7,7 @@ BLECharacteristic imuChar("abcdef01-1234-5678-1234-56789abcdef0",
 
 void setup() {
   Serial.begin(115200); // initialize USB for debugging
-  while (!Serial);
+  // while (!Serial);
 
   if (!IMU.begin()) {
     Serial.println("Failed to initialize IMU!");

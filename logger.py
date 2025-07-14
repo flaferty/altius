@@ -14,11 +14,23 @@ DEVICES = {
 
 CHAR_UUID = "abcdef01-1234-5678-1234-56789abcdef0"
 
+found_devices = {}
+
+def detection_callback(device, advertisement_data):
+    if advertisement_data.local_name:
+        found_devices[device.address] = (device, advertisement_data.local_name)
+        # print(f"{device.address}, {advertisement_data.local_name}")
+
 async def record_imu(device_name, filename):
     print(f"Scanning for {device_name}...")
-    devices = await BleakScanner.discover()
-    match = next((d for d in devices if d.name == device_name), None) # scans for device with the matching name
 
+    scanner = BleakScanner(detection_callback)
+    await scanner.start()
+    await asyncio.sleep(5)  # scan duration
+    await scanner.stop()
+
+    match = next((dev for dev, name in found_devices.values() if name == device_name),  None)
+    
     if not match:
         print(f"[!] Device '{device_name}' not found.")
         return
