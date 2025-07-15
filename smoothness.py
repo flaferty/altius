@@ -5,8 +5,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
-def calculate_movement_smoothness(file_path, stillness_accel_threshold=0.1, stillness_gyro_threshold=0.2,
-                                  max_expected_jerk=100.0):
+def calculate_movement_smoothness(file_path, stillness_accel_threshold=0.8, stillness_gyro_threshold=8.0,
+                                  max_expected_jerk=2500.0):
     """
     Calculates a smoothness score by analyzing jerk during movement periods.
 
@@ -86,16 +86,16 @@ def calculate_movement_smoothness(file_path, stillness_accel_threshold=0.1, stil
         return 100.0, df, []
 
     # Lower average jerk is better (smoother)
-    average_jerk = np.mean(jerk_scores)
+    average_jerk = np.median(np.clip(jerk_scores, 0, 4000))
 
     # Normalize the score.
     smoothness_score = 1 - (average_jerk / max_expected_jerk)
     final_score = max(0.0, min(1.0, smoothness_score)) * 100
 
     # Removed the print statement here, as it will be handled by the main loop
-    # print(f"\nAnalysis for {file_path}:")
-    # print(f"Detected {len(movements)} movement periods.")
-    # print(f"Average Jerk: {average_jerk:.3f}, Smoothness Score: {final_score:.1f}/100")
+    #print(f"\nAnalysis for {file_path}:")
+    #print(f"Detected {len(movements)} movement periods.")
+    #print(f"Average Jerk: {average_jerk:.3f}, Smoothness Score: {final_score:.1f}/100")
 
     return final_score, df, movements
 
@@ -138,19 +138,19 @@ def visualize_movements(limb_name, df, movements, score, output_dir="output_figu
 
 
 if __name__ == "__main__":
-    '''
+
     # Example setup for 4 limbs:
     limb_files = {
-        'Right Arm': 'right_arm_data.csv',
-        'Left Arm': 'left_arm_data.csv',
-        'Right Leg': 'right_leg_data.csv',
-        'Left Leg': 'left_leg_data.csv'
+        'Right Arm': '/Users/raisarusal/PycharmProjects/CPS Project/data/data6/right_arm.csv',
+        'Left Arm': '/Users/raisarusal/PycharmProjects/CPS Project/data/data6/left_arm.csv',
+        'Left Leg': '/Users/raisarusal/PycharmProjects/CPS Project/data/data6/left_leg.csv'
     }
     '''
     limb_files = {
         'Smooth Mover': 'smooth_mover.csv',
         'Jerky Mover': 'jerky_mover.csv'
     }
+    '''
     # --- Analysis & Visualization ---
     limb_scores = {}
     output_directory = "climber_smoothness_results"
