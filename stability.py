@@ -16,7 +16,7 @@ def estimate_sample_rate(timestamps):
     avg_interval = np.mean(intervals)
     return 1 / avg_interval if avg_interval > 0 else 1
 
-def compute_stability(accel_data, gyro_data, sample_rate, window_size=0.33, accel_thresh=0.26, gyro_thresh=22):
+def compute_stability(accel_data, gyro_data, sample_rate, window_size=0.33, accel_thresh=0.26, gyro_thresh=47):
     window_len = max(1, int(window_size * sample_rate))
     num_windows = len(accel_data) // window_len
     stable_windows = 0
