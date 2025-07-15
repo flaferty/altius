@@ -70,3 +70,4 @@ if overall_scores:
     avg_score = np.mean(list(overall_scores.values()))
     print(f"\nAverage Stability Score Across All Limbs: {avg_score*100:.1f}")
 
+
