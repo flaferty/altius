@@ -183,5 +183,5 @@ if __name__ == "__main__":
     else:
         print("No individual limb scores to display.")
 
-    print(f"\nAll figures have been saved to the '{output_directory}'  directory.")
+    print(f"\nAll figures have been saved to the '{output_directory}' directory.")
 
