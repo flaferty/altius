@@ -23,7 +23,7 @@ def read_csv_file(filename):
 def compute_magnitude(ax, ay, az):
     return np.sqrt(ax**2 + ay**2 + az**2)
 
-def analyze_arm_leg_usage(all_data, movement_threshold=0.3):
+def analyze_arm_leg_usage(all_data, movement_threshold=0.8):
     movement_counts = {}
 
     for part, readings in all_data.items():
