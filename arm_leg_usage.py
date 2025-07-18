@@ -3,7 +3,7 @@ import csv
 from datetime import datetime
 import numpy as np
 
-PARTS = ["left_hand", "right_hand", "left_leg", "right_leg"]
+PARTS = ["left_arm", "right_arm", "left_leg", "right_leg"]
 
 def read_csv_file(filename):
     data = []
@@ -90,5 +90,3 @@ def analyze_usage_from_csv(folder):
     print(f"Comment: {summary['comment']}\n")
 
     return summary
-
-analyze_usage_from_csv("data")

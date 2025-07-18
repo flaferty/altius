@@ -128,7 +128,7 @@ def analyze_from_csv(folder):
     else:
         print("\n Not enough data to compute rhythm.")
 
-    return results
+    return rhythm
 
-analyze_from_csv("data")
+# analyze_from_csv("data")
 

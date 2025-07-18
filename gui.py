@@ -6,16 +6,16 @@ import math
 import signal
 from async_tkinter_loop import async_mainloop
 from arm_leg_usage import analyze_usage_from_csv
-
-proc = None
-usage = analyze_usage_from_csv("data") 
+from stability import get_average_stability_score
+from smoothness import get_smoothness_score
+from fall_rhythm import analyze_from_csv
 
 class DotAnimation:
     def __init__(self, root):
         self.root = root
-        self.canvas = tk.Canvas(root, width=600, height=600, bg='black')
+        self.canvas = tk.Canvas(root, width=700, height=600, bg='black')
         self.canvas.pack()
-        self.center_x = 300
+        self.center_x = 350
         self.center_y = 300
         self.radius = 10
         self.dot1 = self.canvas.create_oval(0, 0, 0, 0, fill='white')
@@ -29,9 +29,9 @@ class DotAnimation:
         
         self.stop_label = tk.Label(root, text=" X ",font=("Helvetica", 24, "bold"),fg='white', bg='black', cursor="pointinghand")
         self.stop_label.bind("<Button-1>", stop_logger_process)
-        self.canvas.create_window(300, 500, window=self.stop_label)
+        self.canvas.create_window(350, 500, window=self.stop_label)
         
-        self.loading_text = self.canvas.create_text(300, 450, text="Collecting data...", fill="white", font=("Helvetica", 20, "bold"), anchor='center')
+        self.loading_text = self.canvas.create_text(350, 450, text="Collecting data...", fill="white", font=("Helvetica", 20, "bold"), anchor='center')
 
 
     def animate(self):
@@ -75,25 +75,21 @@ class DotAnimation:
         
     phase_toggle_ready = True
     
-def show_finished_screen(root):
+def show_finished_screen(root, usage, stability_score, smoothness_score, rhythm):
     animation.make_black()
-    tk.Label(root, text="Average Score:", font=("Helvetica", 24, "bold"), bg='black').place(relx=0.2, rely=0.2, anchor='w')
-    tk.Label(root, text="Smoothness:", font=("Helvetica", 20, "bold"), bg='black').place(relx=0.25, rely=0.3, anchor='w')
-    tk.Label(root, text="Stability:", font=("Helvetica", 20, "bold"), bg='black').place(relx=0.25, rely=0.4, anchor='w')
-    tk.Label(root, text="Arm/Leg Usage:", font=("Helvetica", 20, "bold"), bg='black').place(relx=0.25, rely=0.5, anchor='w')
-    tk.Label(root, text=f"  Arm: {usage['arm_usage_ratio']*100:.0f}%  |  Leg: {usage['leg_usage_ratio']*100:.0f}%", 
-         font=("Helvetica", 16), bg='black', fg='white').place(relx=0.25, rely=0.55, anchor='w')
-    tk.Label(root, text="Rhythm/Flow:", font=("Helvetica", 20, "bold"), bg='black').place(relx=0.25, rely=0.6, anchor='w')
-    tk.Label(root, text="Grip Count:", font=("Helvetica", 20, "bold"), bg='black').place(relx=0.25, rely=0.7, anchor='w')
-    # tk.Label(root, text="Reach/Extension:", font=("Helvetica", 20, "bold"), bg='black').place(relx=0.25, rely=0.8, anchor='w')    
-    
-
-async def run_main_and_update_gui(root):
-    proc = await asyncio.create_subprocess_exec(
-        sys.executable, "logger.py"
-    )
-    await proc.wait()
-    root.after(0, show_finished_screen, root)
+    tk.Label(root, text="Scores:", font=("Helvetica", 24, "bold"), bg='black').place(relx=0.2, rely=0.2, anchor='w')
+    tk.Label(root, text=f"Smoothness: {smoothness_score:.1f}%", font=("Helvetica", 20, "bold"), bg='black').place(relx=0.25, rely=0.3, anchor='w')
+    tk.Label(root, text=f"Stability: {stability_score*100:.1f}%", font=("Helvetica", 20, "bold"), bg='black').place(relx=0.25, rely=0.4, anchor='w')
+    tk.Label(root, text=f"Arm/Leg Usage:    {usage['arm_usage_ratio']:.0f} / {usage['leg_usage_ratio']:.0f}", font=("Helvetica", 20, "bold"), bg='black').place(relx=0.25, rely=0.5, anchor='w')
+    tk.Label(root, text=f"  {usage['comment']}", 
+         font=("Helvetica", 15, "bold"), bg='black', fg='white').place(relx=0.25, rely=0.55, anchor='w')
+    tk.Label(root, text=f"Rhythm/Flow:", font=("Helvetica", 20, "bold"), bg='black').place(relx=0.25, rely=0.65, anchor='w')
+    if rhythm:
+        tk.Label(root, text=f"Mean Move Time: {rhythm['mean_interval']} s", font=("Helvetica", 15, "bold"), bg='black').place(relx=0.3, rely=0.7, anchor='w')
+        tk.Label(root, text=f"Rhythm Score: {rhythm['rhythm_score']}", font=("Helvetica", 15, "bold"), bg='black').place(relx=0.3, rely=0.75, anchor='w')
+    else:
+        tk.Label(root, text="Not enough data for rhythm.", font=("Helvetica", 15), bg='black').place(relx=0.3, rely=0.7, anchor='w')
+    tk.Label(root, text="Grip Count:", font=("Helvetica", 20, "bold"), bg='black').place(relx=0.25, rely=0.85, anchor='w')
 
 def stop_logger_process(event=None):
     global proc
@@ -101,12 +97,16 @@ def stop_logger_process(event=None):
         proc.send_signal(signal.SIGINT)
 
 async def run_main_and_update_gui(root):
-    global proc
     proc = await asyncio.create_subprocess_exec(
         sys.executable, "logger.py"
     )
     await proc.wait()
-    root.after(0, show_finished_screen, root)
+    
+    usage = await asyncio.to_thread(analyze_usage_from_csv, "data")
+    stability_score = await asyncio.to_thread(get_average_stability_score)
+    smoothness_score = await asyncio.to_thread(get_smoothness_score)
+    rhythm = await asyncio.to_thread(analyze_from_csv, "data")
+    root.after(0, show_finished_screen, root, usage, stability_score, smoothness_score, rhythm)
 
 def start_asyncio_loop(root):
     loop = asyncio.get_event_loop()
