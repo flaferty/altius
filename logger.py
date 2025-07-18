@@ -1,6 +1,7 @@
 import asyncio
 import struct
 import csv
+import os
 from datetime import datetime
 from bleak import BleakClient, BleakScanner
 
@@ -31,6 +32,8 @@ async def record_imu(device_name, filename):
 
     match = next((dev for dev, name in found_devices.values() if name == device_name),  None)
     
+    os.makedirs("data", exist_ok=True)
+    path = os.path.join("data", filename)
     if not match:
         print(f"[!] Device '{device_name}' not found.")
         return
@@ -38,7 +41,7 @@ async def record_imu(device_name, filename):
     async with BleakClient(match.address) as client: # asynchronously connect to arduino as client
         print(f"Connected to {device_name}")
 
-        with open(filename, mode='w', newline='') as csv_file:
+        with open(path, mode='w', newline='') as csv_file:
             csv_writer = csv.writer(csv_file)
             csv_writer.writerow([
                 "timestamp",

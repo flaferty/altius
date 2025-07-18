@@ -5,8 +5,10 @@ import time
 import math
 import signal
 from async_tkinter_loop import async_mainloop
+from arm_leg_usage import analyze_usage_from_csv
 
 proc = None
+usage = analyze_usage_from_csv("data") 
 
 class DotAnimation:
     def __init__(self, root):
@@ -75,13 +77,15 @@ class DotAnimation:
     
 def show_finished_screen(root):
     animation.make_black()
-    tk.Label(root, text="Score", font=("Helvetica", 24, "bold"), bg='black').place(relx=0.2, rely=0.2, anchor='w')
+    tk.Label(root, text="Average Score:", font=("Helvetica", 24, "bold"), bg='black').place(relx=0.2, rely=0.2, anchor='w')
     tk.Label(root, text="Smoothness:", font=("Helvetica", 20, "bold"), bg='black').place(relx=0.25, rely=0.3, anchor='w')
     tk.Label(root, text="Stability:", font=("Helvetica", 20, "bold"), bg='black').place(relx=0.25, rely=0.4, anchor='w')
     tk.Label(root, text="Arm/Leg Usage:", font=("Helvetica", 20, "bold"), bg='black').place(relx=0.25, rely=0.5, anchor='w')
+    tk.Label(root, text=f"  Arm: {usage['arm_usage_ratio']*100:.0f}%  |  Leg: {usage['leg_usage_ratio']*100:.0f}%", 
+         font=("Helvetica", 16), bg='black', fg='white').place(relx=0.25, rely=0.55, anchor='w')
     tk.Label(root, text="Rhythm/Flow:", font=("Helvetica", 20, "bold"), bg='black').place(relx=0.25, rely=0.6, anchor='w')
     tk.Label(root, text="Grip Count:", font=("Helvetica", 20, "bold"), bg='black').place(relx=0.25, rely=0.7, anchor='w')
-    tk.Label(root, text="Reach/Extension:", font=("Helvetica", 20, "bold"), bg='black').place(relx=0.25, rely=0.8, anchor='w')    
+    # tk.Label(root, text="Reach/Extension:", font=("Helvetica", 20, "bold"), bg='black').place(relx=0.25, rely=0.8, anchor='w')    
     
 
 async def run_main_and_update_gui(root):
