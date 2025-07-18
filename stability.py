@@ -85,32 +85,35 @@ def compute_hold_stability(accel_data, gyro_data,sample_rate):
 
 
 # Main analysis loop
-overall_scores = {}
+def get_average_stability_score():
+    overall_scores = {}
 
-for limb, filename in sensor_files.items():
-    try:
-        df = pd.read_csv(filename)
-        df['timestamp'] = pd.to_datetime(df['timestamp'])
+    for limb, filename in sensor_files.items():
+        try:
+            df = pd.read_csv(filename)
+            df['timestamp'] = pd.to_datetime(df['timestamp'])
 
-        acc_data = df[['accX', 'accY', 'accZ']].to_numpy()
-        gyro_data = df[['gyroX', 'gyroY', 'gyroZ']].to_numpy()
-        timestamps = df['timestamp'].to_list()
+            acc_data = df[['accX', 'accY', 'accZ']].to_numpy()
+            gyro_data = df[['gyroX', 'gyroY', 'gyroZ']].to_numpy()
+            timestamps = df['timestamp'].to_list()
 
-        sample_rate = estimate_sample_rate(timestamps)
-        stability_score, segments = compute_hold_stability(acc_data, gyro_data, sample_rate)
+            sample_rate = estimate_sample_rate(timestamps)
+            stability_score, segments = compute_hold_stability(acc_data, gyro_data, sample_rate)
 
-        print(f"\n--- {limb} ---")
-        print(f"Estimated sample rate: {sample_rate:.2f} Hz")
-        print(f"Stability Score (Still Segments): {stability_score * 100:.1f}%")
-        print(f"Stable Windows: {segments}")
+            print(f"\n--- {limb} ---")
+            print(f"Estimated sample rate: {sample_rate:.2f} Hz")
+            print(f"Stability Score (Still Segments): {stability_score * 100:.1f}%")
+            print(f"Stable Windows: {segments}")
 
-        overall_scores[limb] = stability_score
+            overall_scores[limb] = stability_score
 
-    except FileNotFoundError:
-        print(f"\nFile not found for {limb}: {filename}")
-    except Exception as e:
-        print(f"\nError processing {limb}: {e}")
+        except FileNotFoundError:
+            print(f"\nFile not found for {limb}: {filename}")
+        except Exception as e:
+            print(f"\nError processing {limb}: {e}")
 
-if overall_scores:
-    avg_score = np.mean(list(overall_scores.values()))
-    print(f"\nAverage Stability Score Across All Limbs: {avg_score * 100:.1f}%")
+    if overall_scores:
+        avg_score = np.mean(list(overall_scores.values()))
+        print(f"\nAverage Stability Score Across All Limbs: {avg_score * 100:.1f}%")
+        return avg_score
+    return 0.0
