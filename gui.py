@@ -9,6 +9,9 @@ from arm_leg_usage import analyze_usage_from_csv
 from stability import get_average_stability_score
 from smoothness import get_smoothness_score
 from fall_rhythm import analyze_from_csv
+from grip_count import get_grip_count
+
+proc = None 
 
 class DotAnimation:
     def __init__(self, root):
@@ -75,7 +78,7 @@ class DotAnimation:
         
     phase_toggle_ready = True
     
-def show_finished_screen(root, usage, stability_score, smoothness_score, rhythm):
+def show_finished_screen(root, usage, stability_score, smoothness_score, rhythm, grip_count):
     animation.make_black()
     tk.Label(root, text="Scores:", font=("Helvetica", 24, "bold"), bg='black').place(relx=0.2, rely=0.2, anchor='w')
     tk.Label(root, text=f"Smoothness: {smoothness_score:.1f}%", font=("Helvetica", 20, "bold"), bg='black').place(relx=0.25, rely=0.3, anchor='w')
@@ -89,7 +92,7 @@ def show_finished_screen(root, usage, stability_score, smoothness_score, rhythm)
         tk.Label(root, text=f"Rhythm Score: {rhythm['rhythm_score']}", font=("Helvetica", 15, "bold"), bg='black').place(relx=0.3, rely=0.75, anchor='w')
     else:
         tk.Label(root, text="Not enough data for rhythm.", font=("Helvetica", 15), bg='black').place(relx=0.3, rely=0.7, anchor='w')
-    tk.Label(root, text="Grip Count:", font=("Helvetica", 20, "bold"), bg='black').place(relx=0.25, rely=0.85, anchor='w')
+    tk.Label(root, text=f"Grip Count: {grip_count}", font=("Helvetica", 20, "bold"), bg='black').place(relx=0.25, rely=0.85, anchor='w')
 
 def stop_logger_process(event=None):
     global proc
@@ -97,16 +100,23 @@ def stop_logger_process(event=None):
         proc.send_signal(signal.SIGINT)
 
 async def run_main_and_update_gui(root):
+    global proc
     proc = await asyncio.create_subprocess_exec(
         sys.executable, "logger.py"
     )
     await proc.wait()
     
+    print(f"\n\n")
     usage = await asyncio.to_thread(analyze_usage_from_csv, "data")
+    print(f"\n\n")
     stability_score = await asyncio.to_thread(get_average_stability_score)
+    print(f"\n\n")
     smoothness_score = await asyncio.to_thread(get_smoothness_score)
+    print(f"\n\n")
     rhythm = await asyncio.to_thread(analyze_from_csv, "data")
-    root.after(0, show_finished_screen, root, usage, stability_score, smoothness_score, rhythm)
+    print(f"\n\n")
+    grip_count = get_grip_count("data/left_arm.csv")
+    root.after(0, show_finished_screen, root, usage, stability_score, smoothness_score, rhythm, grip_count)
 
 def start_asyncio_loop(root):
     loop = asyncio.get_event_loop()

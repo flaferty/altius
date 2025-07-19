@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 
 
 def calculate_movement_smoothness(file_path, stillness_accel_threshold=0.8, stillness_gyro_threshold=8.0,
-                                  max_expected_jerk=2500.0):
+                                  max_expected_jerk=1000.0):
     """
     Calculates a smoothness score by analyzing jerk during movement periods.
 
@@ -70,6 +70,7 @@ def calculate_movement_smoothness(file_path, stillness_accel_threshold=0.8, stil
 
         # Calculate time differences for this specific movement block
         dt = move_df.index.to_series().diff().dt.total_seconds().dropna()
+        dt = dt[dt > 0.01]
         if dt.empty:
             continue
 
@@ -88,8 +89,8 @@ def calculate_movement_smoothness(file_path, stillness_accel_threshold=0.8, stil
         return 100.0, df, []
 
     # Lower average jerk is better (smoother)
-    average_jerk = np.median(np.clip(jerk_scores, 0, 4000))
-
+    average_jerk = np.median(np.clip(jerk_scores, 0, 1000))
+    
     # Normalize the score.
     smoothness_score = 1 - (average_jerk / max_expected_jerk)
     final_score = max(0.0, min(1.0, smoothness_score)) * 100

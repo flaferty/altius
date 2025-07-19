@@ -4,12 +4,11 @@ import matplotlib.pyplot as plt
 from datetime import datetime
 
 sensor_files = {
-    "Left Leg": "data/data10/left_leg.csv",
-    "Right Leg": "data/data10/right_leg.csv",
-    "Left Arm": "data/data10/left_arm.csv",
-    "Right Arm": "data/data10/right_arm.csv"
+    "Left Leg": "data/left_leg.csv",
+    "Right Leg": "data/right_leg.csv",
+    "Left Arm": "data/left_arm.csv",
+    "Right Arm": "data/right_arm.csv"
 }
-
 
 def estimate_sample_rate(timestamps): # computes avg sample rate between readings in Hz
     if len(timestamps) < 2: # fewer than 2 timestamps are provied
