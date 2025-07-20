@@ -3,7 +3,7 @@ import csv
 from datetime import datetime
 import numpy as np
 
-PARTS = ["left_hand", "right_hand", "left_leg", "right_leg"]
+PARTS = ["left_arm", "right_arm", "left_leg", "right_leg"]
 
 def read_csv_file(filename):
     data = []
@@ -39,8 +39,10 @@ def analyze_arm_leg_usage(all_data, movement_threshold=0.8):
     return movement_counts
 
 def usage_summary(movement_counts):
-    arm_total = movement_counts.get("left_hand", 0) + movement_counts.get("right_hand", 0)
+    arm_total = movement_counts.get("left_arm", 0) + movement_counts.get("right_arm", 0)
+    # print("arm_total " + str(arm_total))
     leg_total = movement_counts.get("left_leg", 0) + movement_counts.get("right_leg", 0)
+    # print("leg_total " + str(leg_total))
     total = arm_total + leg_total
 
     if total == 0:
@@ -66,7 +68,7 @@ def usage_summary(movement_counts):
         "comment": comment
     }
 
-def analyze_usage_from_csv(folder):
+def get_arm_leg_usage(folder):
     all_data = {}
     for part in PARTS:
         file_match = [f for f in os.listdir(folder) if f.startswith(part)]
@@ -91,4 +93,4 @@ def analyze_usage_from_csv(folder):
 
     return summary
 
-analyze_usage_from_csv("data")
+get_arm_leg_usage("data")
