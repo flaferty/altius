@@ -20,6 +20,18 @@ def read_csv_file(filename):
             except:
                 continue
     return data
+
+def load_all_sensor_data(folder):
+    all_data = {}
+    for part in PARTS:
+        file_path = os.path.join(folder, f"{part}.csv")
+        if os.path.exists(file_path):
+            all_data[part] = read_csv_file(file_path)
+        else:
+            print(f"No csv file found for {part}")
+    return all_data
+
+
 # fall detection start
 def compute_magnitude(ax,ay,az):
     return np.sqrt(ax**2 + ay**2 + az**2)
@@ -61,6 +73,10 @@ def detect_falls(all_data, partial_threshold = 10.0, sync_window = 0.5):
         "partial_falls": partial_falls,
         "full_falls": full_falls
     }
+
+def get_falls(folder):
+    all_data = load_all_sensor_data(folder)
+    return detect_falls(all_data)
 
 # rhythm-flow analysis start
 def detect_movement_times(data, movement_threshold = 2.5, min_pause = 0.5):
@@ -132,3 +148,15 @@ def analyze_from_csv(folder):
 
 # analyze_from_csv("data")
 
+def get_rhythm(folder):
+    all_data = load_all_sensor_data(folder)
+    all_movement_times = []
+
+    for readings in all_data.values():
+        times = detect_movement_times(readings)
+        all_movement_times.extend(times)
+
+    all_movement_times.sort()
+    return analyze_rhythm(all_movement_times)
+
+print(get_rhythm("data"))

@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+import os
 
 def estimate_sample_rate(timestamps):
     if len(timestamps) < 2:
@@ -8,13 +9,13 @@ def estimate_sample_rate(timestamps):
     avg_interval = np.mean(intervals)
     return 1 / avg_interval if avg_interval > 0 else 1
 
-def count_grips_from_still_windows(
+def count_grips(
     path,
     sample_rate,
-    window_sec=0.5,
+    window_sec=0.25,
     stillness_tol_acc=0.2,
     stillness_tol_gyro=50,
-    min_consec_windows=2
+    min_consec_windows=3
 ):
     df = pd.read_csv(path)
     df['timestamp'] = pd.to_datetime(df['timestamp'])
@@ -51,18 +52,28 @@ def count_grips_from_still_windows(
 
     return grip_count
 
-# === Main ===
-df = pd.read_csv("data/data21/left_arm.csv")
-df['timestamp'] = pd.to_datetime(df['timestamp'])
-sample_rate = estimate_sample_rate(df['timestamp'].to_list())
+def get_grip_count(folder):
+    grip_counts = []
+    for side in ["left_arm", "right_arm"]:
+        file_path = os.path.join(folder, f"{side}.csv")
+        if not os.path.exists(file_path):
+            print(f"[!] File not found: {file_path}")
+            grip_counts.append(0)
+            continue
 
-grips = count_grips_from_still_windows(
-    path="data/data21/left_arm.csv",
-    sample_rate=sample_rate,
-    window_sec=0.5,
-    stillness_tol_acc=0.2,
-    stillness_tol_gyro=50,
-    min_consec_windows=2
-)
+        df = pd.read_csv(file_path)
+        if df.empty:
+            grip_counts.append(0)
+            continue
 
-print(grips)
+        df['timestamp'] = pd.to_datetime(df['timestamp'])
+        sample_rate = estimate_sample_rate(df['timestamp'].to_list())
+        grips = count_grips(
+            path=file_path,
+            sample_rate=sample_rate
+        )
+        grip_counts.append(grips)
+
+    return grip_counts
+
+print(get_grip_count("data"))

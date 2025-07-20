@@ -140,24 +140,17 @@ def visualize_movements(limb_name, df, movements, score, output_dir="output_figu
 
 
 
-def get_smoothness_score():
+def get_smoothness_score(folder="data"):
+    limb_files = {
+        'Right Arm': os.path.join(folder, 'right_arm.csv'),
+        'Left Arm': os.path.join(folder, 'left_arm.csv'),
+        'Left Leg': os.path.join(folder, 'left_leg.csv'),
+        'Right Leg': os.path.join(folder, 'right_leg.csv')
+    }
 
-    # Example setup for 4 limbs:
-    limb_files = {
-        'Right Arm': 'data/right_arm.csv',
-        'Left Arm': 'data/left_arm.csv',
-        'Left Leg': 'data/left_leg.csv',
-        'Right Leg': 'data/right_leg.csv'
-    }
-    '''
-    limb_files = {
-        'Smooth Mover': 'smooth_mover.csv',
-        'Jerky Mover': 'jerky_mover.csv'
-    }
-    '''
-    # --- Analysis & Visualization ---
     limb_scores = {}
     output_directory = "climber_smoothness_results"
+
     for limb, file in limb_files.items():
         print(f"\n--- Processing {limb} data from {file} ---")
         raw_score, processed_df, detected_movements = calculate_movement_smoothness(file)
@@ -165,27 +158,16 @@ def get_smoothness_score():
         if processed_df is not None:
             final_score = raw_score
             limb_scores[limb] = final_score
-
-            visualize_movements(limb, processed_df, detected_movements, final_score)
+            # Uncomment if visualization is needed
+            # visualize_movements(limb, processed_df, detected_movements, final_score)
         else:
             print(f"Skipping visualization for {limb} due to data processing error.")
 
-    # --- Combine 4 Limbs into One Overall Score ---
     print("\n-- Overall Smoothness Results --")
     if limb_scores:
-        total_score_sum = sum(limb_scores.values())
-        overall_smoothness_score = total_score_sum / len(limb_scores)
-        print(f"Overall Average Smoothness Score (All Limbs): {overall_smoothness_score:.1f}/100")
-        return overall_smoothness_score
+        overall_score = sum(limb_scores.values()) / len(limb_scores)
+        print(f"Overall Average Smoothness Score (All Limbs): {overall_score:.1f}/100")
+        return overall_score
     else:
-        print("No limb scores were calculated. Cannot compute overall average.")
-
-    # --- Display Individual Limb Scores to the User ---
-    print("\n--- Individual Limb Smoothness Scores ---")
-    if limb_scores:
-        for limb_name, score in limb_scores.items():
-            print(f"{limb_name}: {score:.1f}/100")
-    else:
-        print("No individual limb scores to display.")
-
-    print(f"\nAll figures have been saved to the '{output_directory}' directory.")
+        print("No valid data found for smoothness score.")
+        return 0.0
