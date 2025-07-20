@@ -4,74 +4,115 @@ import csv
 from datetime import datetime
 from bleak import BleakClient, BleakScanner
 
-# List of devices to connect to
 DEVICES = {
-    "IMU_LeftArm": "left_arm.csv",
-    "IMU_RightArm": "right_arm.csv",
-    "IMU_LeftLeg": "left_leg.csv",
-    "IMU_RightLeg": "right_leg.csv"
+    "IMU_LeftArm": "data/left_arm.csv",
+    "IMU_RightArm": "data/right_arm.csv",
+    "IMU_LeftLeg": "data/left_leg.csv",
+    "IMU_RightLeg": "data/right_leg.csv"
 }
 
 CHAR_UUID = "abcdef01-1234-5678-1234-56789abcdef0"
-
 found_devices = {}
 
 def detection_callback(device, advertisement_data):
     if advertisement_data.local_name:
         found_devices[device.address] = (device, advertisement_data.local_name)
-        # print(f"{device.address}, {advertisement_data.local_name}")
 
-async def record_imu(device_name, filename):
-    print(f"Scanning for {device_name}...")
-
+async def scan_for_devices(print_callback):
     scanner = BleakScanner(detection_callback)
     await scanner.start()
-    await asyncio.sleep(5)  # scan duration
+    await asyncio.sleep(5)
     await scanner.stop()
+    print_callback("[*] Scan complete")
 
-    match = next((dev for dev, name in found_devices.values() if name == device_name),  None)
-    
-    if not match:
-        print(f"[!] Device '{device_name}' not found.")
-        return
+def get_matching_devices(print_callback):
+    matches = {}
+    requested = set(DEVICES.keys())
+    found_names = set(name for _, name in found_devices.values())
 
-    async with BleakClient(match.address) as client: # asynchronously connect to arduino as client
-        print(f"Connected to {device_name}")
+    for dev, name in found_devices.values():
+        if name in DEVICES:
+            matches[name] = dev
 
-        with open(filename, mode='w', newline='') as csv_file:
-            csv_writer = csv.writer(csv_file)
-            csv_writer.writerow([
-                "timestamp",
-                "accX", "accY", "accZ",
-                "gyroX", "gyroY", "gyroZ",
-                "magX", "magY", "magZ"
-            ]) #first row
+    missing = requested - found_names
+    for name in missing:
+        print_callback(f"[!] Device '{name}' not found.")
 
-            def handle_notification(sender, data): # has to have 2 parameters
-                if len(data) == 36:
-                    values = struct.unpack('<9f', data) # 9 float values in little endian
+    return matches
+
+async def record_imu(device_name, filename, device, print_callback, stop_event):
+    client = BleakClient(device)
+    csv_file = None
+
+    try:
+        await client.connect(timeout=10.0)
+        print_callback(f"[+] Connected to {device_name}")
+
+        csv_file = open(filename, mode='w', newline='')
+        csv_writer = csv.writer(csv_file)
+        csv_writer.writerow([
+            "timestamp",
+            "accX", "accY", "accZ",
+            "gyroX", "gyroY", "gyroZ",
+            "magX", "magY", "magZ"
+        ])
+
+        def handle_notification(sender, data):
+            if len(data) == 36:
+                try:
+                    values = struct.unpack('<9f', data)
                     timestamp = datetime.now().isoformat()
                     csv_writer.writerow([timestamp] + list(values))
-                    #print(f"[{device_name}] {timestamp} "f"acc=({values[0]:.3f}, {values[1]:.3f}, {values[2]:.3f})  "f"gyro=({values[3]:.3f}, {values[4]:.3f}, {values[5]:.3f})  "f"mag=({values[6]:.1f}, {values[7]:.1f}, {values[8]:.1f})")
-                else:
-                    print(f"[{device_name}] [!] Unexpected data length: {len(data)}")
+                except Exception as e:
+                    print_callback(f"[!] Error writing data for {device_name}: {e}")
 
-            await client.start_notify(CHAR_UUID, handle_notification) # subscribe to data from arduino
+        await client.start_notify(CHAR_UUID, handle_notification)
+        await stop_event.wait()
 
-            try:
-                while True:
-                    await asyncio.sleep(1) # allows the program to run until manually interrupted
-            except asyncio.CancelledError:
+    except Exception as e:
+        print_callback(f"[!] Failed during {device_name} session: {e}")
+
+    finally:
+        try:
+            if client.is_connected:
                 await client.stop_notify(CHAR_UUID)
-                print(f"[{device_name}] Stopped.")
+                await client.disconnect()
+        except Exception as e:
+            print_callback(f"[!] Error disconnecting {device_name}: {e}")
+        
+        if csv_file:
+            try:
+                csv_file.close()
             except Exception as e:
-                print(f"[{device_name}] Error: {e}")
+                print_callback(f"[!] Error closing file for {device_name}: {e}")
+        
+        print_callback(f"[{device_name}] Stopped and cleaned up.")
 
-async def main():
-    tasks = [record_imu(name, file) for name, file in DEVICES.items()]
+
+# main entry point, accepts a print callback
+async def main(print_callback=print, stop_event=None):
+    if stop_event is None:
+        stop_event = asyncio.Event()
+
+    print_callback("[*] Scanning for devices...")
+    await scan_for_devices(print_callback)
+    matching = get_matching_devices(print_callback)
+
+    if not matching:
+        print_callback("[!] No target devices found.")
+        return
+
+    device_list = "\n".join(matching.keys())
+    print_callback(f"[+] Found devices:\n{device_list}")
+
+
+    tasks = [
+        record_imu(name, DEVICES[name], dev, print_callback, stop_event)
+        for name, dev in matching.items()
+    ]
+
     try:
-        await asyncio.gather(*tasks) # runs all coroutine objects concurrently
-    except KeyboardInterrupt:
-        print("\nInterrupted by user.")
-
-asyncio.run(main())
+        await asyncio.gather(*tasks)
+    except asyncio.CancelledError:
+        stop_event.set()  # make all record_imu() exit
+        print_callback("[!] Logging cancelled.")
