@@ -6,7 +6,7 @@ Altius is a Python-based system for analysis of climbing performance using 4 Ard
 
 - **4 limb IMU logging:** Collects data from four Arduinos (left arm, right arm, left leg, right leg), each running its own firmware.
 - **GUI:** Tkinter-based user interface for starting/stopping data collection and viewing performance scores.
-- **Automatical scoring:** Calculates and displays scores for:
+- **Scoring:** Calculates and displays scores for:
   - Arm/leg usage ratio
   - Stability
   - Movement smoothness
