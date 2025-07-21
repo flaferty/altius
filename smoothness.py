@@ -102,44 +102,6 @@ def calculate_movement_smoothness(file_path, stillness_accel_threshold=0.8, stil
 
     return final_score, df, movements
 
-
-def visualize_movements(limb_name, df, movements, score, output_dir="output_figures"):
-    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(15, 8), sharex=True)
-
-    # Raw signal and highlighted movement periods
-    ax1.plot(df.index, df['acc_mag'], label='Acceleration Magnitude', color='grey', alpha=0.5)
-    for start, end in movements:
-        ax1.plot(df.loc[start:end].index, df.loc[start:end, 'acc_mag'], color='darkorange')
-        ax1.axvspan(start, end, color='cornflowerblue', alpha=0.2)
-    ax1.set_title(f'Smoothness Analysis for {limb_name} (Score: {score:.1f}/100)')
-    ax1.set_ylabel('Acceleration (m/s²)')
-    ax1.grid(True)
-
-    # Plot jerk for visualization
-    df['acc_jerk'] = df['acc_mag'].diff().abs() / df.index.to_series().diff().dt.total_seconds()
-    ax2.plot(df.index, df['acc_jerk'], label='Acceleration Jerk', color='firebrick', alpha=0.7)
-    ax2.set_xlabel('Time')
-    ax2.set_ylabel('Jerk (m/s³)')
-    ax2.legend()
-    ax2.grid(True)
-
-    plt.tight_layout()
-
-    # --- Save the figure instead of showing it ---
-    # Ensure the output directory exists
-    if not os.path.exists(output_dir):
-        os.makedirs(output_dir)
-
-    # Create a clean filename
-    file_name = f"{limb_name.replace(' ', '_').lower()}_smoothness_analysis.png"
-    save_path = os.path.join(output_dir, file_name)
-
-    plt.savefig(save_path, dpi=300)  # dpi for higher quality
-    plt.close(fig)  # Close the figure to free up memory
-    print(f"Figure saved to: {save_path}")
-
-
-
 def get_smoothness_score(folder="data"):
     limb_files = {
         'Right Arm': os.path.join(folder, 'right_arm.csv'),
