@@ -13,7 +13,7 @@ def count_grips(
     path,
     sample_rate,
     window_sec=0.25,
-    stillness_tol_acc=0.2,
+    stillness_tol_acc=1,
     stillness_tol_gyro=50,
     min_consec_windows=3
 ):
@@ -76,4 +76,4 @@ def get_grip_count(folder):
 
     return grip_counts
 
-print(get_grip_count("data"))
+print(get_grip_count("data/data23"))
