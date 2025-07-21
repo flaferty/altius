@@ -81,15 +81,15 @@ def get_arm_leg_usage(folder):
     movement_counts = analyze_arm_leg_usage(all_data)
     summary = usage_summary(movement_counts)
 
-    print("\nArm / Leg Usage Analysis:\n")
+    # print("\nArm / Leg Usage Analysis:\n")
 
     for part in PARTS:
         count = movement_counts.get(part, 0)
-        print(f"  {part}: {count} movements")
+        # print(f"  {part}: {count} movements")
 
-    print(f"\nArm usage ratio: {summary['arm_usage_ratio']}")
-    print(f"Leg usage ratio: {summary['leg_usage_ratio']}\n")
-    print(f"Comment: {summary['comment']}\n")
+    # print(f"\nArm usage ratio: {summary['arm_usage_ratio']}")
+    # print(f"Leg usage ratio: {summary['leg_usage_ratio']}\n")
+    # print(f"Comment: {summary['comment']}\n")
 
     return summary
 

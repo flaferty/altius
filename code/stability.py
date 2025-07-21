@@ -88,10 +88,10 @@ def get_stability(folder):
             sample_rate = estimate_sample_rate(timestamps)
             stability_score, segments = compute_hold_stability(acc_data, gyro_data, sample_rate)
 
-            print(f"\n--- {limb_name} ---")
-            print(f"Estimated sample rate: {sample_rate:.2f} Hz")
-            print(f"Stability Score (Still Segments): {stability_score * 100:.1f}%")
-            print(f"Stable Windows: {segments}")
+            # print(f"\n--- {limb_name} ---")
+            # print(f"Estimated sample rate: {sample_rate:.2f} Hz")
+            # print(f"Stability Score (Still Segments): {stability_score * 100:.1f}%")
+            # print(f"Stable Windows: {segments}")
 
             overall_scores[limb_name] = stability_score
 
@@ -102,7 +102,7 @@ def get_stability(folder):
 
     if overall_scores:
         avg_score = np.mean(list(overall_scores.values()))
-        print(f"\nAverage Stability Score Across All Limbs: {avg_score * 100:.1f}%")
+        # print(f"\nAverage Stability Score Across All Limbs: {avg_score * 100:.1f}%")
         return avg_score
 
     return 0.0

@@ -95,11 +95,6 @@ def calculate_movement_smoothness(file_path, stillness_accel_threshold=0.8, stil
     smoothness_score = 1 - (average_jerk / max_expected_jerk)
     final_score = max(0.0, min(1.0, smoothness_score)) * 100
 
-    # Removed the print statement here, as it will be handled by the main loop
-    #print(f"\nAnalysis for {file_path}:")
-    #print(f"Detected {len(movements)} movement periods.")
-    #print(f"Average Jerk: {average_jerk:.3f}, Smoothness Score: {final_score:.1f}/100")
-
     return final_score, df, movements
 
 def get_smoothness_score(folder="data"):
@@ -114,22 +109,20 @@ def get_smoothness_score(folder="data"):
     output_directory = "climber_smoothness_results"
 
     for limb, file in limb_files.items():
-        print(f"\n--- Processing {limb} data from {file} ---")
+        # print(f"\n--- Processing {limb} data from {file} ---")
         raw_score, processed_df, detected_movements = calculate_movement_smoothness(file)
 
         if processed_df is not None:
             final_score = raw_score
             limb_scores[limb] = final_score
-            # Uncomment if visualization is needed
-            # visualize_movements(limb, processed_df, detected_movements, final_score)
         else:
             print(f"Skipping visualization for {limb} due to data processing error.")
 
-    print("\n-- Overall Smoothness Results --")
+    # print("\n-- Overall Smoothness Results --")
     if limb_scores:
         overall_score = sum(limb_scores.values()) / len(limb_scores)
-        print(f"Overall Average Smoothness Score (All Limbs): {overall_score:.1f}/100")
+        # print(f"Overall Average Smoothness Score (All Limbs): {overall_score:.1f}/100")
         return overall_score
     else:
-        print("No valid data found for smoothness score.")
+        # print("No valid data found for smoothness score.")
         return 0.0

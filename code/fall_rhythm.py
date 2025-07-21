@@ -105,49 +105,6 @@ def analyze_rhythm(movement_times):
         "rhythm_score" : round(rhythm_score, 3)
     }
 
-def analyze_climber_flow(all_data, movement_threshold = 2.5, min_pause = 0.5):
-    all_movement_times = []
-    for readings in all_data.values():
-        movement_times = detect_movement_times(readings, movement_threshold, min_pause)
-        all_movement_times.extend(movement_times)
-    all_movement_times.sort()
-    return analyze_rhythm(all_movement_times)
-
-# main function
-def analyze_from_csv(folder):
-    all_data = {}
-    for part in PARTS:
-        file_match = [f for f in os.listdir(folder) if f.startswith(part)]
-        if not file_match:
-            print(f"No csv file found for {part}")
-            continue
-        data = read_csv_file(os.path.join(folder, file_match[0]))
-        all_data[part] = data
-
-    #result of fall detection
-    results = detect_falls(all_data)
-    print("\n Partial falls detected:")
-    for ts, part in results['partial_falls']:
-        print(f" {ts} -> {part}")
-
-    print("Full fall detected:")
-    for ts in results['full_falls']:
-        print(f" {ts}")
-
-    #result of rhythm analyse
-    rhythm = analyze_climber_flow(all_data)
-    if rhythm:
-        print("\n Rhythm/Flow Analysis:")
-        print(f" Mean Interval Between Moves: {rhythm['mean_interval']} s")
-        print(f" Std Deviation of Intervals: {rhythm['std_interval']} s")
-        print(f" Rhythm Score (low = better): {rhythm['rhythm_score']}")
-    else:
-        print("\n Not enough data to compute rhythm.")
-
-    return rhythm
-
-# analyze_from_csv("data")
-
 def get_rhythm(folder):
     all_data = load_all_sensor_data(folder)
     all_movement_times = []
