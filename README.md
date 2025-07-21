@@ -17,10 +17,11 @@ Altius is a Python-based system for analysis of climbing performance using 4 Ard
 
 ## Setup
 
-1. **Clone this repository** 
+1. **Clone this repository and install dependencies** 
 ```sh
     git clone https://github.com/flaferty/altius.git
     cd altius
+    pip install bleak async-tkinter-loop numpy pandas matplotlib
 ```
 
 2. **Set up the 4 Arduinos using the `.ino` file from the appropriate `arduino_setup/` subfolder**
