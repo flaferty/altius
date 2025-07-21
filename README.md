@@ -28,7 +28,7 @@ Altius is a Python-based system for analysis of climbing performance using 4 Ard
 3. **Power the Arduinos and secure each device to its respective limb using the custom-designed enclosures**
 4. **Run the GUI:**
    ```sh
-   python gui.py
+   python code/gui.py
    ```
 
 ## Usage
@@ -41,7 +41,7 @@ Altius is a Python-based system for analysis of climbing performance using 4 Ard
 ## Code Structure
 ```bash
 altius/
-├── data/                       # Collects CSV files, 23 subfolders available with testing data
+├── data/                       # Directory for CSV files
 ├── setup/                      # Arduino setup files
 ├── code/
     ├── gui.py                  # GUI and application logic
