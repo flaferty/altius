@@ -75,5 +75,3 @@ def get_grip_count(folder):
         grip_counts.append(grips)
 
     return grip_counts
-
-print(get_grip_count("data/data23"))

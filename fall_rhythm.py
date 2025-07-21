@@ -158,5 +158,3 @@ def get_rhythm(folder):
 
     all_movement_times.sort()
     return analyze_rhythm(all_movement_times)
-
-print(get_rhythm("data"))

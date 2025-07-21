@@ -93,4 +93,3 @@ def get_arm_leg_usage(folder):
 
     return summary
 
-get_arm_leg_usage("data")

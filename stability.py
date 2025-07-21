@@ -107,4 +107,3 @@ def get_stability(folder):
 
     return 0.0
 
-print(get_stability("data/data10"))
